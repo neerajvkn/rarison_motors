@@ -1,0 +1,18 @@
+include MANIFEST.in
+include requirements.txt
+include *.json
+include *.md
+include *.py
+include *.txt
+recursive-include rarison_motors *.css
+recursive-include rarison_motors *.csv
+recursive-include rarison_motors *.html
+recursive-include rarison_motors *.ico
+recursive-include rarison_motors *.js
+recursive-include rarison_motors *.json
+recursive-include rarison_motors *.md
+recursive-include rarison_motors *.png
+recursive-include rarison_motors *.py
+recursive-include rarison_motors *.svg
+recursive-include rarison_motors *.txt
+recursive-exclude rarison_motors *.pyc
