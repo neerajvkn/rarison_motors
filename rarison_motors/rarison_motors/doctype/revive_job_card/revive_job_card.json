@@ -34,6 +34,7 @@
   "complaints__requests_section",
   "table_deay",
   "technician_diagnosis",
+  "scan_barcode",
   "spares_used",
   "labour_work_done",
   "section_break_icfn",
@@ -348,12 +349,17 @@
    "fieldtype": "Currency",
    "label": "Total Paid Amount",
    "read_only": 1
+  },
+  {
+   "fieldname": "scan_barcode",
+   "fieldtype": "Data",
+   "label": "Barcode"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-02 21:10:31.498828",
+ "modified": "2026-09-03 01:30:16.467113",
  "modified_by": "Administrator",
  "module": "Rarison Motors",
  "name": "Revive Job Card",
