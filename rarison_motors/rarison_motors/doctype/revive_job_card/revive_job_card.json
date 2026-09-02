@@ -1,0 +1,382 @@
+{
+ "actions": [],
+ "allow_bulk_edit": 1,
+ "autoname": "naming_series:naming_series",
+ "creation": "2026-08-25 23:56:11.707863",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "column_break_msaa",
+  "naming_series",
+  "section_break_hrfp",
+  "status",
+  "date_in",
+  "technician_assigned",
+  "column_break_mfsu",
+  "date_out",
+  "service_advisor",
+  "section_break_jvcx",
+  "customer",
+  "column_break_gjpk",
+  "contact_no",
+  "vehicle_section",
+  "vehicle",
+  "model",
+  "variant",
+  "km_in",
+  "column_break_xltv",
+  "year",
+  "vin__chasis_no",
+  "brand",
+  "km_out",
+  "complaints_and_repairs_tab",
+  "complaints__requests_section",
+  "table_deay",
+  "technician_diagnosis",
+  "spares_used",
+  "labour_work_done",
+  "section_break_icfn",
+  "spare_total",
+  "column_break_ltfl",
+  "labour_total",
+  "column_break_rcjy",
+  "grand_total",
+  "discounts_section",
+  "discount_amount",
+  "discount_percentage",
+  "column_break_umfx",
+  "discounted_amount",
+  "column_break_tkua",
+  "amount_after_discount",
+  "payments_tab",
+  "get_advance",
+  "paid_advances",
+  "section_break_vcxs",
+  "spares_invoice",
+  "total_paid_amount",
+  "column_break_thte",
+  "service_invoice",
+  "payments_section",
+  "payments",
+  "make_payments",
+  "toal_paid_incl_advance"
+ ],
+ "fields": [
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer"
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Title"
+  },
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Naming Series",
+   "options": "RJC-.####"
+  },
+  {
+   "fieldname": "column_break_msaa",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_jvcx",
+   "fieldtype": "Section Break",
+   "label": "Customer"
+  },
+  {
+   "fieldname": "column_break_gjpk",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "vehicle",
+   "fieldtype": "Link",
+   "label": "Vehicle",
+   "options": "Customer Vehicles"
+  },
+  {
+   "fieldname": "contact_no",
+   "fieldtype": "Data",
+   "label": "Contact No"
+  },
+  {
+   "fieldname": "vehicle_section",
+   "fieldtype": "Section Break",
+   "label": "Vehicle"
+  },
+  {
+   "fieldname": "model",
+   "fieldtype": "Data",
+   "label": "Model"
+  },
+  {
+   "fieldname": "variant",
+   "fieldtype": "Data",
+   "label": "Variant"
+  },
+  {
+   "fieldname": "column_break_xltv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "year",
+   "fieldtype": "Data",
+   "label": "Year"
+  },
+  {
+   "fieldname": "vin__chasis_no",
+   "fieldtype": "Data",
+   "label": "VIN / Chasis No"
+  },
+  {
+   "fieldname": "complaints__requests_section",
+   "fieldtype": "Section Break",
+   "label": "Complaints / Requests"
+  },
+  {
+   "fieldname": "table_deay",
+   "fieldtype": "Table",
+   "label": "Customer Reported Issues",
+   "options": "Revive Job Card Issues"
+  },
+  {
+   "fieldname": "km_in",
+   "fieldtype": "Int",
+   "label": "KM In"
+  },
+  {
+   "fieldname": "km_out",
+   "fieldtype": "Int",
+   "label": "KM Out"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "In Queue\nDiagnosis in progress\nDiagnosis complete\nWaiting for customer approval\nCustomer approved\nRepair in progress\nRepair complete\nDelivered"
+  },
+  {
+   "fieldname": "technician_diagnosis",
+   "fieldtype": "Table",
+   "label": "Technician Diagnosis",
+   "options": "Revive Job Card Diagnosis"
+  },
+  {
+   "fieldname": "spares_used",
+   "fieldtype": "Table",
+   "label": "Spares Used",
+   "options": "Revive Job Card Spares Used"
+  },
+  {
+   "fieldname": "labour_work_done",
+   "fieldtype": "Table",
+   "label": "Labour Work Done",
+   "options": "Revive Job Card Repairs Done"
+  },
+  {
+   "fieldname": "complaints_and_repairs_tab",
+   "fieldtype": "Tab Break",
+   "label": "Complaints and Repairs"
+  },
+  {
+   "fieldname": "brand",
+   "fieldtype": "Link",
+   "label": "Brand",
+   "options": "Brand"
+  },
+  {
+   "fieldname": "section_break_hrfp",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "date_in",
+   "fieldtype": "Datetime",
+   "label": "Date In"
+  },
+  {
+   "fieldname": "technician_assigned",
+   "fieldtype": "Link",
+   "label": "Technician Assigned",
+   "options": "Employee"
+  },
+  {
+   "fieldname": "column_break_mfsu",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "date_out",
+   "fieldtype": "Datetime",
+   "label": "Date Out"
+  },
+  {
+   "fieldname": "service_advisor",
+   "fieldtype": "Link",
+   "label": "Service Advisor",
+   "options": "Employee"
+  },
+  {
+   "fieldname": "section_break_icfn",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "spare_total",
+   "fieldtype": "Currency",
+   "label": "Spare Total"
+  },
+  {
+   "fieldname": "column_break_ltfl",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "labour_total",
+   "fieldtype": "Currency",
+   "label": "Labour Total"
+  },
+  {
+   "fieldname": "amount_after_discount",
+   "fieldtype": "Currency",
+   "label": "Amount after discount",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_rcjy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "grand_total",
+   "fieldtype": "Currency",
+   "label": "Grand Total"
+  },
+  {
+   "fieldname": "discount_percentage",
+   "fieldtype": "Float",
+   "label": "Discount Percentage"
+  },
+  {
+   "fieldname": "discounts_section",
+   "fieldtype": "Section Break",
+   "label": "Discounts"
+  },
+  {
+   "fieldname": "discount_amount",
+   "fieldtype": "Currency",
+   "label": "Discount Amount"
+  },
+  {
+   "fieldname": "column_break_umfx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "discounted_amount",
+   "fieldtype": "Currency",
+   "label": "Discounted Amount",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_tkua",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "payments_tab",
+   "fieldtype": "Tab Break",
+   "label": "Payments"
+  },
+  {
+   "fieldname": "get_advance",
+   "fieldtype": "Button",
+   "label": "Get advance"
+  },
+  {
+   "fieldname": "paid_advances",
+   "fieldtype": "Table",
+   "label": "Paid Advances",
+   "options": "Revive Advance Payments"
+  },
+  {
+   "fieldname": "section_break_vcxs",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_thte",
+   "fieldtype": "Column Break",
+   "read_only": 1
+  },
+  {
+   "fieldname": "service_invoice",
+   "fieldtype": "Link",
+   "label": "Service Invoice",
+   "options": "Sales Invoice",
+   "read_only": 1
+  },
+  {
+   "fieldname": "payments_section",
+   "fieldtype": "Section Break",
+   "label": "Payments"
+  },
+  {
+   "fieldname": "payments",
+   "fieldtype": "Table",
+   "label": "Payments",
+   "options": "Payments Revive Job Card"
+  },
+  {
+   "fieldname": "make_payments",
+   "fieldtype": "Button",
+   "label": "Make Payments"
+  },
+  {
+   "fieldname": "toal_paid_incl_advance",
+   "fieldtype": "Currency",
+   "label": "Toal Paid Incl Advance"
+  },
+  {
+   "fieldname": "spares_invoice",
+   "fieldtype": "Link",
+   "label": "Spares Invoice",
+   "options": "Sales Invoice",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_paid_amount",
+   "fieldtype": "Currency",
+   "label": "Total Paid Amount",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-09-02 21:10:31.498828",
+ "modified_by": "Administrator",
+ "module": "Rarison Motors",
+ "name": "Revive Job Card",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "title"
+}

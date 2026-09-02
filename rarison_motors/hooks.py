@@ -173,3 +173,11 @@ user_data_fields = [
 # 	"rarison_motors.auth.validate"
 # ]
 
+
+doc_events = {
+    "Payment Entry": {
+        "on_submit": "rarison_motors.api.revive_job_card.payment_entry_on_submit"
+    }
+}
+
+fixtures = [{"doctype": "Client Script", "filters": [["module" , "in" , ("Rarison Motors" )]]}]

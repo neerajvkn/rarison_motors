@@ -1,0 +1,61 @@
+{
+ "actions": [],
+ "allow_bulk_edit": 1,
+ "allow_rename": 1,
+ "creation": "2026-09-02 18:58:53.091481",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "invoice_series_for_job_card_section",
+  "sales_invoice_series",
+  "column_break_vsyi",
+  "service_invoice_series"
+ ],
+ "fields": [
+  {
+   "fieldname": "invoice_series_for_job_card_section",
+   "fieldtype": "Section Break",
+   "label": "Invoice Series For Job Card"
+  },
+  {
+   "fieldname": "sales_invoice_series",
+   "fieldtype": "Data",
+   "label": "Sales Invoice Series"
+  },
+  {
+   "fieldname": "column_break_vsyi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "service_invoice_series",
+   "fieldtype": "Data",
+   "label": "Service Invoice Series"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-09-02 18:59:39.374182",
+ "modified_by": "Administrator",
+ "module": "Rarison Motors",
+ "name": "Revive Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
