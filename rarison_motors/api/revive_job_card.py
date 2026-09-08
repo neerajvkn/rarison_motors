@@ -3,6 +3,11 @@ from erpnext.accounts.doctype.payment_entry.payment_entry import get_payment_ent
 import frappe
 from frappe import _
 from erpnext.accounts.doctype.payment_entry.payment_entry import get_payment_entry
+from frappe.utils import flt
+
+SOURCE_WAREHOUSE = "Stores - RM"
+TARGET_WAREHOUSE = "Issues to workshop - RM"
+PRICE_LIST = "Standard Selling"
 
 @frappe.whitelist()
 def create_job_card_invoices(job_card_name):
@@ -64,10 +69,23 @@ def create_job_card_invoices(job_card_name):
 
             item = frappe.get_doc("Item", row.item)
 
+            # spare_invoice.append("items", {
+            #     "item_code": row.item,
+            #     "item_name": item.item_name,
+            #     "qty": row.qty or 1,
+            #     "rate": row.rate or 0,
+            #     "warehouse": row.warehouse if hasattr(row, "warehouse") else None
+            # })
             spare_invoice.append("items", {
                 "item_code": row.item,
                 "item_name": item.item_name,
                 "qty": row.qty or 1,
+                "uom": row.uom or item.stock_uom,
+                "conversion_factor": (
+                    frappe.utils.get_uom_conv_factor(row.item, row.uom)
+                    if row.uom and row.uom != item.stock_uom
+                    else 1
+                ),
                 "rate": row.rate or 0,
                 "warehouse": row.warehouse if hasattr(row, "warehouse") else None
             })
@@ -571,9 +589,9 @@ def make_advance_payment(job_card_name, payment_amount):
     # ---------------------------------------------------------
 
 
-# ---------------------------------------------------------
-# Account currencies
-# ---------------------------------------------------------
+    # ---------------------------------------------------------
+    # Account currencies
+    # ---------------------------------------------------------
 
     payment_entry.party_account_currency = frappe.db.get_value(
         "Account",
@@ -604,3 +622,448 @@ def make_advance_payment(job_card_name, payment_amount):
     #     "name": payment_entry.name,
     #     "payment_amount": payment_amount,
     # }
+
+@frappe.whitelist()
+def issue_stock(parent_doctype, parent_name, items):
+    """
+    Transfer stock from SOURCE_WAREHOUSE to TARGET_WAREHOUSE
+    and add the transferred items to the parent's spares_used table.
+
+    Expected items:
+    [
+        {
+            "item": "ITEM-001",
+            "qty": 2
+        },
+        {
+            "item": "ITEM-002",
+            "qty": 1
+        }
+    ]
+    """
+
+    if isinstance(items, str):
+        items = frappe.parse_json(items)
+
+    if not items:
+        frappe.throw(_("No items were selected."))
+
+    # ------------------------------------------------------------------
+    # Validate parent
+    # ------------------------------------------------------------------
+
+    parent = frappe.get_doc(parent_doctype, parent_name)
+
+    if parent.doctype != "Revive Job Card":
+        frappe.throw(_("Invalid parent document."))
+
+    # ------------------------------------------------------------------
+    # Validate warehouses
+    # ------------------------------------------------------------------
+
+    for warehouse in [SOURCE_WAREHOUSE, TARGET_WAREHOUSE]:
+        if not frappe.db.exists("Warehouse", warehouse):
+            frappe.throw(
+                _("Warehouse {0} does not exist.").format(
+                    frappe.bold(warehouse)
+                )
+            )
+
+    if SOURCE_WAREHOUSE == TARGET_WAREHOUSE:
+        frappe.throw(_("Source and target warehouses cannot be the same."))
+
+    # ------------------------------------------------------------------
+    # Clean and combine items
+    #
+    # Combine by (item_code, uom) so we don't merge quantities that are
+    # actually in different units. Also track the stock-UOM-equivalent
+    # quantity for each item so we can validate against Bin qty, which
+    # is always in stock UOM.
+    # ------------------------------------------------------------------
+
+    combined_items = {}       # key: (item_code, uom) -> {"qty": .., "conversion_factor": ..}
+    stock_qty_by_item = {}    # key: item_code -> total qty in stock UOM (for validation)
+
+    for row in items:
+        item_code = row.get("item")
+        qty = flt(row.get("qty"))
+        uom = row.get("uom")
+        conversion_factor = flt(row.get("conversion_factor")) or 1
+
+        if not item_code:
+            frappe.throw(_("Item Code is required."))
+
+        if qty <= 0:
+            frappe.throw(
+                _("Quantity for item {0} must be greater than zero.").format(
+                    item_code
+                )
+            )
+
+        if not uom:
+            frappe.throw(
+                _("UOM is required for item {0}.").format(item_code)
+            )
+
+        if not frappe.db.exists("Item", item_code):
+            frappe.throw(
+                _("Item {0} does not exist.").format(
+                    item_code
+                )
+            )
+
+        key = (item_code, uom)
+
+        if key in combined_items:
+            combined_items[key]["qty"] += qty
+        else:
+            combined_items[key] = {
+                "qty": qty,
+                "conversion_factor": conversion_factor,
+            }
+
+        stock_qty_by_item[item_code] = (
+            stock_qty_by_item.get(item_code, 0)
+            + (qty * conversion_factor)
+        )
+
+    # ------------------------------------------------------------------
+    # Validate available stock (compare stock-UOM-equivalent totals)
+    # ------------------------------------------------------------------
+
+    for item_code, required_stock_qty in stock_qty_by_item.items():
+
+        stock_qty = flt(
+            frappe.db.get_value(
+                "Bin",
+                {
+                    "item_code": item_code,
+                    "warehouse": SOURCE_WAREHOUSE,
+                },
+                "actual_qty",
+            )
+        )
+
+        if required_stock_qty > stock_qty + 0.000001:
+            frappe.throw(
+                _(
+                    "Insufficient stock for {0}. "
+                    "Available: {1}, Requested: {2}"
+                ).format(
+                    frappe.bold(item_code),
+                    stock_qty,
+                    required_stock_qty,
+                )
+            )
+
+    validated_items = []
+
+    for (item_code, uom), data in combined_items.items():
+
+        qty = data["qty"]
+        conversion_factor = data["conversion_factor"]
+
+        item_name = frappe.db.get_value(
+            "Item",
+            item_code,
+            "item_name",
+        )
+
+        # --------------------------------------------------------------
+        # Get Standard Selling price
+        # --------------------------------------------------------------
+
+        rate = frappe.db.get_value(
+            "Item Price",
+            {
+                "item_code": item_code,
+                "price_list": PRICE_LIST,
+                "selling": 1,
+                "uom": uom,
+                "currency": frappe.db.get_default("currency"),
+            },
+            "price_list_rate",
+            order_by="valid_from desc",
+        )
+
+        # If no price was found, try without currency restriction.
+        if rate is None:
+            rate = frappe.db.get_value(
+                "Item Price",
+                {
+                    "item_code": item_code,
+                    "price_list": PRICE_LIST,
+                    "selling": 1,
+                    "uom": uom,
+                },
+                "price_list_rate",
+                order_by="valid_from desc",
+            )
+
+        rate = flt(rate)
+
+        validated_items.append(
+            {
+                "item": item_code,
+                "item_name": item_name,
+                "qty": qty,
+                "uom": uom,
+                "conversion_factor": conversion_factor,
+                "rate": rate,
+                "total": rate * qty,
+            }
+        )
+
+    # ------------------------------------------------------------------
+    # Create Material Transfer
+    # ------------------------------------------------------------------
+
+    stock_entry = frappe.new_doc("Stock Entry")
+
+    stock_entry.stock_entry_type = "Material Transfer"
+
+    stock_entry.from_warehouse = SOURCE_WAREHOUSE
+    stock_entry.to_warehouse = TARGET_WAREHOUSE
+
+    stock_entry.remarks = _(
+        "Stock issued to workshop from Revive Job Card {0}"
+    ).format(parent.name)
+
+    for row in validated_items:
+
+        # stock_entry.append(
+        #     "items",
+        #     {
+        #         "item_code": row["item"],
+        #         "qty": row["qty"],
+        #         "s_warehouse": SOURCE_WAREHOUSE,
+        #         "t_warehouse": TARGET_WAREHOUSE,
+        #     },
+        # )
+
+        stock_entry.append(
+            "items",
+            {
+                "item_code": row["item"],
+                "qty": row["qty"],
+                "uom": row["uom"],
+                "conversion_factor": row["conversion_factor"],
+                "s_warehouse": SOURCE_WAREHOUSE,
+                "t_warehouse": TARGET_WAREHOUSE,
+            },
+        )
+
+    # Insert + submit inside the current transaction.
+    stock_entry.insert(ignore_permissions=True)
+    stock_entry.submit()
+
+    # ------------------------------------------------------------------
+    # Add rows to spares_used
+    # ------------------------------------------------------------------
+
+    for row in validated_items:
+
+        # child = parent.append(
+        #     "spares_used",
+        #     {
+        #         "item": row["item"],
+        #         "name1": row["item_name"],
+        #         "rate": row["rate"],
+        #         "qty": row["qty"],
+        #         "total": row["total"],
+        #     },
+        # )
+
+        # parent.append(
+        #     "spares_used",
+        #     {
+        #         "item": row["item"],
+        #         "name1": row["item_name"],
+        #         "qty": row["qty"],
+        #         "uom": row["uom"],
+        #         "rate": row["rate"],
+        #         "total": row["total"],
+        #     },
+        # )
+        parent.append(
+            "spares_used",
+            {
+                "item": row["item"],
+                "name1": row["item_name"],
+                "qty": row["qty"],
+                "uom": row["uom"],
+                "conversion_factor": row["conversion_factor"],
+                "rate": row["rate"],
+                "total": row["total"],
+            },
+        )
+
+    # ------------------------------------------------------------------
+    # Save parent
+    # ------------------------------------------------------------------
+
+    parent.save(ignore_permissions=True)
+
+    return {
+        "success": True,
+        "stock_entry": stock_entry.name,
+        "items": validated_items,
+    }
+
+@frappe.whitelist()
+def get_item_details(item_code):
+
+    if not item_code:
+        return {}
+
+    if not frappe.db.exists("Item", item_code):
+        frappe.throw(_("Item {0} does not exist.").format(item_code))
+
+    available_qty = flt(
+        frappe.db.get_value(
+            "Bin",
+            {
+                "item_code": item_code,
+                "warehouse": SOURCE_WAREHOUSE,
+            },
+            "actual_qty",
+        )
+    )
+
+    rate = frappe.db.get_value(
+        "Item Price",
+        {
+            "item_code": item_code,
+            "price_list": PRICE_LIST,
+            "selling": 1,
+        },
+        "price_list_rate",
+        order_by="valid_from desc",
+    )
+
+    stock_uom = frappe.db.get_value(
+        "Item",
+        item_code,
+        "stock_uom"
+    )
+
+    # return {
+    #     "item_code": item_code,
+    #     "item_name": frappe.db.get_value(
+    #         "Item",
+    #         item_code,
+    #         "item_name"
+    #     ),
+    #     "available_qty": available_qty,
+    #     "rate": flt(rate),
+    # }
+    return {
+        "item_code": item_code,
+        "item_name": frappe.db.get_value(
+            "Item",
+            item_code,
+            "item_name"
+        ),
+        "stock_uom": stock_uom,
+        "available_qty": available_qty,
+        "rate": flt(rate),
+    }
+
+@frappe.whitelist()
+def get_item_uoms(doctype, txt, searchfield, start, page_len, filters):
+
+    item_code = filters.get("item_code")
+
+    if not item_code:
+        return []
+
+    stock_uom = frappe.db.get_value(
+        "Item",
+        item_code,
+        "stock_uom"
+    )
+
+    uoms = frappe.db.sql("""
+        SELECT uom
+        FROM `tabUOM Conversion Detail`
+        WHERE parent = %s
+        AND parenttype = 'Item'
+        AND uom LIKE %s
+
+        UNION
+
+        SELECT %s
+
+        ORDER BY uom
+        LIMIT %s
+    """, (
+        item_code,
+        "%" + txt + "%",
+        stock_uom,
+        page_len
+    ))
+
+    return uoms
+
+@frappe.whitelist()
+def get_uom_details(item_code, uom):
+
+    if not item_code or not uom:
+        return {}
+
+    stock_uom = frappe.db.get_value(
+        "Item",
+        item_code,
+        "stock_uom"
+    )
+
+    if uom == stock_uom:
+        conversion_factor = 1
+    else:
+        conversion_factor = frappe.db.get_value(
+            "UOM Conversion Detail",
+            {
+                "parent": item_code,
+                "parenttype": "Item",
+                "uom": uom
+            },
+            "conversion_factor"
+        )
+
+    if not conversion_factor:
+        frappe.throw(
+            _("No conversion factor found for {0} → {1}").format(
+                item_code,
+                uom
+            )
+        )
+
+    return {
+        "uom": uom,
+        "stock_uom": stock_uom,
+        "conversion_factor": conversion_factor
+    }
+
+@frappe.whitelist()
+def get_item_price(item_code, uom):
+
+    if not item_code or not uom:
+        return {
+            "rate": 0
+        }
+
+    rate = frappe.db.get_value(
+        "Item Price",
+        {
+            "item_code": item_code,
+            "price_list": "Standard Selling",
+            "selling": 1,
+            "uom": uom
+        },
+        "price_list_rate",
+        order_by="valid_from desc"
+    )
+
+    return {
+        "rate": flt(rate)
+    }

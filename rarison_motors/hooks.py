@@ -177,7 +177,16 @@ user_data_fields = [
 doc_events = {
     "Payment Entry": {
         "on_submit": "rarison_motors.api.revive_job_card.payment_entry_on_submit"
+    },
+	 "Item": {
+        "validate": "rarison_motors.events.item.validate_item"
     }
+}
+
+jinja = {
+    "methods": [
+        "rarison_motors.api.qr_code.generate_upi_qr"
+    ]
 }
 
 fixtures = [{"doctype": "Client Script", "filters": [["module" , "in" , ("Rarison Motors" )]]}]

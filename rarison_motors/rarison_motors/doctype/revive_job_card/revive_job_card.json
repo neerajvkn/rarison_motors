@@ -103,9 +103,12 @@
    "options": "Customer Vehicles"
   },
   {
+   "fetch_from": "customer.mobile_no",
+   "fetch_if_empty": 1,
    "fieldname": "contact_no",
    "fieldtype": "Data",
-   "label": "Contact No"
+   "label": "Contact No",
+   "read_only": 1
   },
   {
    "fieldname": "vehicle_section",
@@ -113,28 +116,40 @@
    "label": "Vehicle"
   },
   {
+   "fetch_from": "vehicle.model",
+   "fetch_if_empty": 1,
    "fieldname": "model",
    "fieldtype": "Data",
-   "label": "Model"
+   "label": "Model",
+   "read_only": 1
   },
   {
+   "fetch_from": "vehicle.variant",
+   "fetch_if_empty": 1,
    "fieldname": "variant",
    "fieldtype": "Data",
-   "label": "Variant"
+   "label": "Variant",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_xltv",
    "fieldtype": "Column Break"
   },
   {
+   "fetch_from": "vehicle.year",
+   "fetch_if_empty": 1,
    "fieldname": "year",
    "fieldtype": "Data",
-   "label": "Year"
+   "label": "Year",
+   "read_only": 1
   },
   {
+   "fetch_from": "vehicle.vinchasis_no",
+   "fetch_if_empty": 1,
    "fieldname": "vin__chasis_no",
    "fieldtype": "Data",
-   "label": "VIN / Chasis No"
+   "label": "VIN / Chasis No",
+   "read_only": 1
   },
   {
    "fieldname": "complaints__requests_section",
@@ -161,7 +176,7 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "In Queue\nDiagnosis in progress\nDiagnosis complete\nWaiting for customer approval\nCustomer approved\nRepair in progress\nRepair complete\nDelivered"
+   "options": "In Queue\nDiagnosis in progress\nDiagnosis complete\nWaiting for customer approval\nCustomer approved\nRepair in progress\nRepair complete\nDelivered\nDELETED"
   },
   {
    "fieldname": "technician_diagnosis",
@@ -187,16 +202,20 @@
    "label": "Complaints and Repairs"
   },
   {
+   "fetch_from": "vehicle.brand",
+   "fetch_if_empty": 1,
    "fieldname": "brand",
    "fieldtype": "Link",
    "label": "Brand",
-   "options": "Brand"
+   "options": "Brand",
+   "read_only": 1
   },
   {
    "fieldname": "section_break_hrfp",
    "fieldtype": "Section Break"
   },
   {
+   "default": "Now",
    "fieldname": "date_in",
    "fieldtype": "Datetime",
    "label": "Date In"
@@ -359,7 +378,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-03 01:30:16.467113",
+ "modified": "2026-09-08 21:14:38.625008",
  "modified_by": "Administrator",
  "module": "Rarison Motors",
  "name": "Revive Job Card",
@@ -375,6 +394,18 @@
    "read": 1,
    "report": 1,
    "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales User",
    "share": 1,
    "write": 1
   }

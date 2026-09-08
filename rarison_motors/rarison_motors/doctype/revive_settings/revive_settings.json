@@ -9,7 +9,12 @@
   "invoice_series_for_job_card_section",
   "sales_invoice_series",
   "column_break_vsyi",
-  "service_invoice_series"
+  "service_invoice_series",
+  "item_settings_section",
+  "service_item_sequence",
+  "payment_section",
+  "upi_id",
+  "upi_name"
  ],
  "fields": [
   {
@@ -30,13 +35,39 @@
    "fieldname": "service_invoice_series",
    "fieldtype": "Data",
    "label": "Service Invoice Series"
+  },
+  {
+   "fieldname": "item_settings_section",
+   "fieldtype": "Section Break",
+   "label": "Item Settings"
+  },
+  {
+   "default": "0",
+   "fieldname": "service_item_sequence",
+   "fieldtype": "Int",
+   "label": "Service Item Sequence"
+  },
+  {
+   "fieldname": "payment_section",
+   "fieldtype": "Section Break",
+   "label": "Payment"
+  },
+  {
+   "fieldname": "upi_id",
+   "fieldtype": "Data",
+   "label": "UPI ID"
+  },
+  {
+   "fieldname": "upi_name",
+   "fieldtype": "Data",
+   "label": "UPI Name"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-09-02 18:59:39.374182",
+ "modified": "2026-09-05 18:35:36.159087",
  "modified_by": "Administrator",
  "module": "Rarison Motors",
  "name": "Revive Settings",
@@ -49,6 +80,16 @@
    "print": 1,
    "read": 1,
    "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Sales User",
    "share": 1,
    "write": 1
   }
