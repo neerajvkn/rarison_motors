@@ -176,7 +176,7 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "In Queue\nDiagnosis in progress\nDiagnosis complete\nWaiting for customer approval\nCustomer approved\nRepair in progress\nRepair complete\nDelivered\nDELETED"
+   "options": "In Queue\nDiagnosis in progress\nDiagnosis complete\nWaiting for customer approval\nCustomer approved\nRepair in progress\nRepair complete\nDelivered\nCancelled\nDELETED"
   },
   {
    "fieldname": "technician_diagnosis",
@@ -378,7 +378,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-08 21:14:38.625008",
+ "modified": "2026-09-09 19:22:18.019920",
  "modified_by": "Administrator",
  "module": "Rarison Motors",
  "name": "Revive Job Card",

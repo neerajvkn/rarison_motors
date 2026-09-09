@@ -12,8 +12,12 @@
   "service_invoice_series",
   "item_settings_section",
   "service_item_sequence",
+  "column_break_pxcu",
+  "store_warehouse",
+  "items_issued_warehouse",
   "payment_section",
   "upi_id",
+  "column_break_swnd",
   "upi_name"
  ],
  "fields": [
@@ -61,13 +65,33 @@
    "fieldname": "upi_name",
    "fieldtype": "Data",
    "label": "UPI Name"
+  },
+  {
+   "fieldname": "column_break_swnd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_pxcu",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "store_warehouse",
+   "fieldtype": "Link",
+   "label": "Store Warehouse",
+   "options": "Warehouse"
+  },
+  {
+   "fieldname": "items_issued_warehouse",
+   "fieldtype": "Link",
+   "label": "Items Issued Warehouse",
+   "options": "Warehouse"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-09-05 18:35:36.159087",
+ "modified": "2026-09-09 19:24:40.133351",
  "modified_by": "Administrator",
  "module": "Rarison Motors",
  "name": "Revive Settings",

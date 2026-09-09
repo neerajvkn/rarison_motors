@@ -1,13 +1,16 @@
 import frappe
-from erpnext.accounts.doctype.payment_entry.payment_entry import get_payment_entry
-import frappe
 from frappe import _
 from erpnext.accounts.doctype.payment_entry.payment_entry import get_payment_entry
 from frappe.utils import flt
 
-SOURCE_WAREHOUSE = "Stores - RM"
-TARGET_WAREHOUSE = "Issues to workshop - RM"
+# SOURCE_WAREHOUSE = "Stores - R"
+# TARGET_WAREHOUSE = "Goods In Transit - R"
 PRICE_LIST = "Standard Selling"
+
+settings = frappe.get_single("Revive Settings")
+SOURCE_WAREHOUSE = settings.store_warehouse
+TARGET_WAREHOUSE = settings.items_issued_warehouse
+
 
 @frappe.whitelist()
 def create_job_card_invoices(job_card_name):
@@ -1067,3 +1070,322 @@ def get_item_price(item_code, uom):
     return {
         "rate": flt(rate)
     }
+
+@frappe.whitelist()
+def get_returnable_spares(job_card_name):
+    """
+    Return the current spares_used rows for a Job Card, so the user
+    can pick which ones (and how much) to return to stores.
+    """
+
+    job_card = frappe.get_doc("Revive Job Card", job_card_name)
+
+    rows = []
+
+    for row in job_card.get("spares_used") or []:
+        rows.append({
+            "name": row.name,
+            "item": row.item,
+            "item_name": row.name1,
+            "qty": flt(row.qty),
+            "uom": row.uom,
+            "conversion_factor": flt(row.conversion_factor) or 1,
+            "rate": flt(row.rate),
+        })
+
+    return rows
+
+
+def _create_return_stock_entry(parent, rows, remarks):
+    """
+    Shared helper: create + submit a Material Transfer Stock Entry
+    moving `rows` (item/qty/uom/conversion_factor) from
+    TARGET_WAREHOUSE back to SOURCE_WAREHOUSE. Mirrors issue_stock's
+    own Stock Entry logic, just reversed.
+
+    `rows` is a list of dicts with keys: item, qty, uom, conversion_factor.
+
+    Returns the submitted Stock Entry name, or None if `rows` is empty.
+    """
+
+    if not rows:
+        return None
+
+    for warehouse in [SOURCE_WAREHOUSE, TARGET_WAREHOUSE]:
+        if not frappe.db.exists("Warehouse", warehouse):
+            frappe.throw(
+                _("Warehouse {0} does not exist.").format(
+                    frappe.bold(warehouse)
+                )
+            )
+
+    # ------------------------------------------------------------
+    # Validate that enough stock exists in the Issued warehouse,
+    # in stock-UOM-equivalent terms.
+    # ------------------------------------------------------------
+
+    stock_qty_by_item = {}
+
+    for row in rows:
+        conversion_factor = flt(row.get("conversion_factor")) or 1
+        stock_qty_by_item[row["item"]] = (
+            stock_qty_by_item.get(row["item"], 0)
+            + flt(row["qty"]) * conversion_factor
+        )
+
+    for item_code, required_stock_qty in stock_qty_by_item.items():
+
+        available = flt(
+            frappe.db.get_value(
+                "Bin",
+                {
+                    "item_code": item_code,
+                    "warehouse": TARGET_WAREHOUSE,
+                },
+                "actual_qty",
+            )
+        )
+
+        if required_stock_qty > available + 0.000001:
+            frappe.throw(
+                _(
+                    "Cannot return {0} of {1}. Only {2} is currently "
+                    "available in {3}."
+                ).format(
+                    required_stock_qty,
+                    frappe.bold(item_code),
+                    available,
+                    frappe.bold(TARGET_WAREHOUSE),
+                )
+            )
+
+    stock_entry = frappe.new_doc("Stock Entry")
+    stock_entry.stock_entry_type = "Material Transfer"
+    stock_entry.from_warehouse = TARGET_WAREHOUSE
+    stock_entry.to_warehouse = SOURCE_WAREHOUSE
+    stock_entry.remarks = remarks
+
+    for row in rows:
+        stock_entry.append("items", {
+            "item_code": row["item"],
+            "qty": flt(row["qty"]),
+            "uom": row.get("uom"),
+            "conversion_factor": flt(row.get("conversion_factor")) or 1,
+            "s_warehouse": TARGET_WAREHOUSE,
+            "t_warehouse": SOURCE_WAREHOUSE,
+        })
+
+    stock_entry.insert(ignore_permissions=True)
+    stock_entry.submit()
+
+    return stock_entry.name
+
+
+@frappe.whitelist()
+def return_stock(parent_doctype, parent_name, items):
+    """
+    Return specific quantities of already-issued spares back to
+    SOURCE_WAREHOUSE, via a reverse Material Transfer.
+
+    Expected items:
+    [
+        {
+            "row_name": "<spares_used child row name>",
+            "item": "ITEM-001",
+            "qty": 1,
+            "uom": "Nos",
+            "conversion_factor": 1
+        }
+    ]
+    """
+
+    if isinstance(items, str):
+        items = frappe.parse_json(items)
+
+    if not items:
+        frappe.throw(_("No items were selected for return."))
+
+    parent = frappe.get_doc(parent_doctype, parent_name)
+
+    if parent.doctype != "Revive Job Card":
+        frappe.throw(_("Invalid parent document."))
+
+    if parent.status == "Cancelled":
+        frappe.throw(_("This Job Card is already cancelled."))
+
+    spares_by_name = {
+        row.name: row for row in (parent.get("spares_used") or [])
+    }
+
+    return_rows = []
+    summary_lines = []
+    rows_to_remove = []
+
+    for entry in items:
+
+        row_name = entry.get("row_name")
+        qty = flt(entry.get("qty"))
+
+        row = spares_by_name.get(row_name)
+
+        if not row:
+            frappe.throw(
+                _("Spares row {0} was not found on this Job Card.").format(
+                    row_name
+                )
+            )
+
+        if qty <= 0:
+            frappe.throw(
+                _("Return quantity for {0} must be greater than zero.").format(
+                    row.item
+                )
+            )
+
+        if qty > flt(row.qty) + 0.000001:
+            frappe.throw(
+                _(
+                    "Cannot return {0} of {1}. Only {2} {3} is issued "
+                    "on this Job Card."
+                ).format(
+                    qty,
+                    frappe.bold(row.item),
+                    flt(row.qty),
+                    row.uom,
+                )
+            )
+
+        conversion_factor = flt(row.conversion_factor) or 1
+
+        return_rows.append({
+            "item": row.item,
+            "qty": qty,
+            "uom": row.uom,
+            "conversion_factor": conversion_factor,
+        })
+
+        summary_lines.append("{0}: {1} {2}".format(row.item, qty, row.uom))
+
+        remaining_qty = flt(row.qty) - qty
+
+        if remaining_qty <= 0.000001:
+            rows_to_remove.append(row.name)
+        else:
+            row.qty = remaining_qty
+            row.total = remaining_qty * flt(row.rate)
+
+    stock_entry_name = _create_return_stock_entry(
+        parent,
+        return_rows,
+        _("Stock returned from Issued to Workshop for Revive Job Card {0}")
+        .format(parent.name),
+    )
+
+    if rows_to_remove:
+        parent.set(
+            "spares_used",
+            [
+                row for row in parent.get("spares_used")
+                if row.name not in rows_to_remove
+            ],
+        )
+
+    parent.save(ignore_permissions=True)
+
+    parent.add_comment(
+        "Comment",
+        _(
+            "The following spares have been returned from the issued "
+            "list to {0}: {1}"
+        ).format(SOURCE_WAREHOUSE, "; ".join(summary_lines)),
+    )
+
+    frappe.db.commit()
+
+    return {
+        "success": True,
+        "stock_entry": stock_entry_name,
+    }
+
+
+@frappe.whitelist()
+def cancel_job_card(job_card_name, reason):
+    """
+    Cancel a Job Card:
+      - Log the cancellation reason as a comment.
+      - Return all currently-issued spares back to SOURCE_WAREHOUSE.
+      - Clear the spares_used table.
+      - Set status to Cancelled.
+    """
+
+    if not reason or not reason.strip():
+        frappe.throw(_("Please provide a cancellation reason."))
+
+    job_card = frappe.get_doc("Revive Job Card", job_card_name)
+
+    if job_card.status == "Cancelled":
+        frappe.throw(_("This Job Card is already cancelled."))
+
+    if job_card.spares_invoice or job_card.service_invoice:
+        frappe.throw(
+            _(
+                "This Job Card already has Sales Invoice(s) linked ({0}). "
+                "Please cancel/credit those invoices before cancelling "
+                "the Job Card."
+            ).format(
+                ", ".join(
+                    filter(None, [job_card.spares_invoice, job_card.service_invoice])
+                )
+            )
+        )
+
+    spares = job_card.get("spares_used") or []
+
+    return_rows = [
+        {
+            "item": row.item,
+            "qty": flt(row.qty),
+            "uom": row.uom,
+            "conversion_factor": flt(row.conversion_factor) or 1,
+        }
+        for row in spares
+    ]
+
+    summary_lines = [
+        "{0}: {1} {2}".format(row["item"], row["qty"], row["uom"])
+        for row in return_rows
+    ]
+
+    stock_entry_name = _create_return_stock_entry(
+        job_card,
+        return_rows,
+        _("Stock returned to Stores due to cancellation of Revive Job Card {0}")
+        .format(job_card.name),
+    )
+
+    job_card.set("spares_used", [])
+    job_card.status = "Cancelled"
+
+    job_card.save(ignore_permissions=True)
+
+    job_card.add_comment(
+        "Comment",
+        _("Job Card cancelled. Reason: {0}").format(reason),
+    )
+
+    if summary_lines:
+        job_card.add_comment(
+            "Comment",
+            _(
+                "The following spares have been returned from the issued "
+                "list to {0}: {1}"
+            ).format(SOURCE_WAREHOUSE, "; ".join(summary_lines)),
+        )
+
+    frappe.db.commit()
+
+    return {
+        "success": True,
+        "stock_entry": stock_entry_name,
+    }
+
