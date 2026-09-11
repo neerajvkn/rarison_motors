@@ -90,7 +90,7 @@ def create_job_card_invoices(job_card_name):
                     else 1
                 ),
                 "rate": row.rate or 0,
-                "warehouse": row.warehouse if hasattr(row, "warehouse") else None
+                "warehouse": TARGET_WAREHOUSE or None
             })
 
         # This invoice is unpaid by default.
