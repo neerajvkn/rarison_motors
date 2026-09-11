@@ -108,5 +108,16 @@
   "name": "Purchase invoice tax calculation",
   "script": "frappe.ui.form.on('Purchase Invoice Item', {\r\n    custom_before_tax_amt: function(frm, cdt, cdn) {\r\n        console.log(\"before tax amount\")\r\n        calculate_rate(frm, cdt, cdn);\r\n    },\r\n    custom_tax_rate: function(frm, cdt, cdn) {\r\n        console.log(\"before tax rate\")\r\n        calculate_rate(frm, cdt, cdn);\r\n    }\r\n});\r\n\r\nfunction calculate_rate(frm, cdt, cdn) {\r\n    let row = locals[cdt][cdn];\r\n\r\n    let before_tax_amt = flt(row.custom_before_tax_amt);\r\n    let tax_rate = flt(row.custom_tax_rate);\r\n    \r\n    console.log(before_tax_amt)\r\n    console.log(tax_rate)\r\n\r\n    let rate = before_tax_amt + (before_tax_amt * (tax_rate / 100));\r\n    console.log(rate)\r\n    frappe.model.set_value(cdt, cdn, 'rate', rate);\r\n}",
   "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Payment Entry",
+  "enabled": 1,
+  "modified": "2026-09-11 17:20:14.846745",
+  "module": "Rarison Motors",
+  "name": "Payment entry ref no optional",
+  "script": "frappe.ui.form.on(\"Payment Entry\", {\r\n    mode_of_payment(frm) {\r\n        if (frm.doc.mode_of_payment && !frm.doc.reference_no) {\r\n            frm.set_value(\"reference_no\", frm.doc.mode_of_payment);\r\n        }\r\n    }\r\n});\r\n",
+  "view": "Form"
  }
 ]
